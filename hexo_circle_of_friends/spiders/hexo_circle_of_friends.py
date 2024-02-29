@@ -98,7 +98,7 @@ class FriendpageLinkSpider(scrapy.Spider):
         return friendpage_link, friendpage_theme
 
     def friend_poor_parse(self, response):
-        # 从友链页解析出所有的友链信息
+        '''从友链页解析出所有的友链信息, 存到队列self.friend_poor中。'''
         # print("friend_poor_parse---------->" + response.url)
 
         # gitee解析

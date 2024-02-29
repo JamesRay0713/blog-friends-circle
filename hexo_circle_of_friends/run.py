@@ -37,24 +37,33 @@ def settings_friends_json_parse(json_file, user_conf):
     :param json_file: 友链字典
     :param user_conf: 配置
     :return:
+    
+    James Ray's update(2024-03-01): 为适配stellar主题下的友链json格式, 做了一些更改。
     """
-    if not json_file.get("friends"):
+    # 数据形式：0：未知；1：普通格式；2：进阶格式；3：stellar主题下的友链格式(e.g. https://raw.github.xaox.cc/xaoxuu/friends/output/v2/data.json)
+    data_type = 0
+    
+    if not json_file.get("friends") and not json_file.get("content"):
         logger.warning(f"json_api格式错误：没有friends字段")
         return
-    friends = json_file["friends"]
-    # 数据形式：0：未知；1：普通格式；2：进阶格式
-    data_type = 0
-    try:
-        if isinstance(friends[0], list):
-            data_type = 1
-        elif isinstance(friends[0], dict):
-            data_type = 2
-    except:
-        logger.warning(f"json_api格式错误：无法判定数据形式")
+    if "friends" in json_file:
+        friends_list = json_file["friends"]
+    else:
+        friends_list = json_file["content"]
+        data_type = 3
+        
+    if not data_type == 3:           
+        try:
+            if isinstance(friends_list[0], list):
+                data_type = 1
+            elif isinstance(friends_list[0], dict):
+                data_type = 2
+        except:
+            logger.warning(f"json_api格式错误：无法判定数据形式")
 
     if data_type == 1:
         # 普通格式
-        user_conf["SETTINGS_FRIENDS_LINKS"]["list"].extend(friends)
+        user_conf["SETTINGS_FRIENDS_LINKS"]["list"].extend(friends_list)
     elif data_type == 2:
         # 进阶格式
         try:
@@ -73,6 +82,16 @@ def settings_friends_json_parse(json_file, user_conf):
                         user_conf["SETTINGS_FRIENDS_LINKS"]["list"].append(friends)
         except:
             logger.warning(f"json_api进阶格式解析错误")
+    elif data_type == 3:
+        # stellar主题下的友链格式
+        try:
+            for dic in friends_list:
+                # 必须有name、link、avatar字段
+                if all(key in dic.keys() for key in ["title", "url", "avatar"]):
+                    friends = [dic['title'], dic['url'], dic['avatar']]
+                    user_conf["SETTINGS_FRIENDS_LINKS"]["list"].append(friends)
+        except:
+            logger.warning(f"stellar主题下的友链格式解析错误")
     else:
         logger.warning(f"json_api格式错误：无法判定数据形式")
 
